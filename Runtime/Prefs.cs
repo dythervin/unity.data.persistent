@@ -8,22 +8,22 @@ namespace Dythervin.PersistentData
     [Serializable]
     public partial class Prefs : ISerializable
     {
-        internal readonly Dictionary<Type, PersistentContainerBase> containers;
+        [JsonProperty] private readonly Dictionary<Type, PersistentContainerBase> _containers;
         [JsonIgnore] public string Path { get; private set; }
 
         public Prefs(SerializationInfo info, StreamingContext context)
         {
-            containers = (Dictionary<Type, PersistentContainerBase>)info.GetValue(nameof(containers), typeof(Dictionary<Type, PersistentContainerBase>));
+            _containers = (Dictionary<Type, PersistentContainerBase>)info.GetValue(nameof(_containers), typeof(Dictionary<Type, PersistentContainerBase>));
         }
 
         private Prefs()
         {
-            containers = new Dictionary<Type, PersistentContainerBase>();
+            _containers = new Dictionary<Type, PersistentContainerBase>();
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(nameof(containers), containers, typeof(Dictionary<Type, PersistentContainerBase>));
+            info.AddValue(nameof(_containers), _containers, typeof(Dictionary<Type, PersistentContainerBase>));
         }
 
         public void Save()
@@ -51,18 +51,22 @@ namespace Dythervin.PersistentData
         {
             Type type = typeof(T);
             PersistentContainer<T> container;
-            if (containers.TryGetValue(type, out PersistentContainerBase containerBase))
+            if (_containers.TryGetValue(type, out PersistentContainerBase containerBase))
             {
                 container = (PersistentContainer<T>)containerBase;
             }
             else
             {
-                containers[type] = container = new PersistentContainer<T>();
+                _containers[type] = container = new PersistentContainer<T>();
                 container.Init();
             }
 
             return container;
         }
 
+        public void Clear()
+        {
+            _containers.Clear();
+        }
     }
 }

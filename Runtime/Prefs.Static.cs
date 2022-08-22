@@ -12,7 +12,8 @@ namespace Dythervin.PersistentData
         public static event Action OnSave;
         public static readonly Prefs Default;
         private static readonly HashSet<Prefs> AllPrefs = new HashSet<Prefs>();
-        
+        private static readonly JsonSerializerSettings Settings = new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto };
+
         static Prefs()
         {
             Default = GetAt($"{Application.persistentDataPath}/prefs.json");
@@ -36,7 +37,8 @@ namespace Dythervin.PersistentData
         public static Prefs GetAt(string path, bool autoSaving = true)
         {
             Prefs pref = File.Exists(path)
-                ? JsonConvert.DeserializeObject<Prefs>(File.ReadAllText(path)) ?? new Prefs()
+                ? JsonConvert.DeserializeObject<Prefs>(File.ReadAllText(path), Settings)
+                  ?? new Prefs()
                 : new Prefs();
             pref.Path = path;
             if (autoSaving)
@@ -46,7 +48,7 @@ namespace Dythervin.PersistentData
 
         private static void Save(Prefs prefs, string path)
         {
-            File.WriteAllText(path, JsonConvert.SerializeObject(prefs, Formatting.Indented));
+            File.WriteAllText(path, JsonConvert.SerializeObject(prefs, Formatting.Indented, Settings));
 #if UNITY_EDITOR
             string dirPath = System.IO.Path.GetDirectoryName(path);
             if (!Directory.Exists(dirPath))
@@ -55,6 +57,13 @@ namespace Dythervin.PersistentData
         }
 
 #if UNITY_EDITOR
+        [MenuItem("Tools/Delete Prefs")]
+        public static void DeleteAll()
+        {
+            Default.Clear();
+            Default.Save();
+        }
+
         public static Prefs GetAtProject(string path, bool autoSaving = true)
         {
             var file = AssetDatabase.LoadAssetAtPath<TextAsset>(path);

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Dythervin.PersistentData
 {
     [Serializable]
     internal class PersistentContainer<T> : PersistentContainerBase, IPersistentContainer<T>
     {
-        private Dictionary<string, Pref<T>> _values;
+        [JsonProperty] private Dictionary<string, Pref<T>> _values;
 
         public void Clear()
         {
@@ -20,10 +21,7 @@ namespace Dythervin.PersistentData
 
         public bool Delete(string key)
         {
-            if (!_values.Remove(key))
-                return false;
-
-            return true;
+            return _values.Remove(key);
         }
 
         public Pref<T> Get(string key)
