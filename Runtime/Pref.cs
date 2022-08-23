@@ -7,10 +7,9 @@ namespace Dythervin.PersistentData
     public sealed class Pref<T>
     {
         public event Action<T> OnChanged;
-        private T _value;
+        [JsonProperty] private T _value;
 
         [JsonIgnore]
-
         public T Value
         {
             get => _value;

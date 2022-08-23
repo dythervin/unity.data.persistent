@@ -1,72 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
+using System.IO;
 using Newtonsoft.Json;
+using UnityEditor;
+using UnityEngine;
 
 namespace Dythervin.PersistentData
 {
-    [Serializable]
-    public partial class Prefs : ISerializable
+    public static class Prefs
     {
-        [JsonProperty] private readonly Dictionary<Type, PersistentContainerBase> _containers;
-        [JsonIgnore] public string Path { get; private set; }
+        public static event Action OnSave;
+        public static readonly PrefContainer Default;
+        private static readonly HashSet<PrefContainer> AllPrefs = new HashSet<PrefContainer>();
 
-        public Prefs(SerializationInfo info, StreamingContext context)
+        static Prefs()
         {
-            _containers = (Dictionary<Type, PersistentContainerBase>)info.GetValue(nameof(_containers), typeof(Dictionary<Type, PersistentContainerBase>));
+            Default = GetAt($"{Application.persistentDataPath}/prefs.json");
         }
 
-        private Prefs()
+        [RuntimeInitializeOnLoadMethod]
+        private static void _Init()
         {
-            _containers = new Dictionary<Type, PersistentContainerBase>();
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue(nameof(_containers), _containers, typeof(Dictionary<Type, PersistentContainerBase>));
-        }
-
-        public void Save()
-        {
-            Save(this, Path);
-        }
-
-
-        public Pref<T> Get<T>(string key)
-        {
-            return GetContainer<T>().Get(key);
-        }
-
-        public void Get<T>(string key, out Pref<T> value)
-        {
-            value = GetContainer<T>().Get(key);
-        }
-
-        public Pref<T> Get<T>(string key, T defaultValue)
-        {
-            return GetContainer<T>().Get(key, defaultValue);
-        }
-
-        private PersistentContainer<T> GetContainer<T>()
-        {
-            Type type = typeof(T);
-            PersistentContainer<T> container;
-            if (_containers.TryGetValue(type, out PersistentContainerBase containerBase))
+            Application.quitting += SaveAll;
+            Application.focusChanged += b =>
             {
-                container = (PersistentContainer<T>)containerBase;
-            }
-            else
-            {
-                _containers[type] = container = new PersistentContainer<T>();
-                container.Init();
-            }
-
-            return container;
+                if (!b)
+                    SaveAll();
+            };
         }
 
-        public void Clear()
+        public static PrefContainer GetAt(string path, bool autoSaving = true)
         {
-            _containers.Clear();
+            PrefContainer pref = PrefContainer.GetAt(path);
+            if (autoSaving)
+                AllPrefs.Add(pref);
+            return pref;
+        }
+
+#if UNITY_EDITOR
+        [MenuItem("Tools/Prefs/Delete All")]
+        public static void DeleteAll()
+        {
+            Default.Clear();
+            Default.Save();
+        }
+
+        [MenuItem("Tools/Prefs/Open Folder")]
+        public static void OpenFolder()
+        {
+            EditorUtility.RevealInFinder(Application.persistentDataPath);
+        }
+
+        public static PrefContainer GetAtProject(string path, bool autoSaving = true)
+        {
+            PrefContainer pref = PrefContainer.GetAtProject(path);
+            if (autoSaving)
+                AllPrefs.Add(pref);
+            return pref;
+        }
+#endif
+
+        private static void SaveAll()
+        {
+            foreach (PrefContainer pref in AllPrefs)
+                pref.Save();
+
+            OnSave?.Invoke();
+            Debug.Log("Prefs saved");
         }
     }
 }
