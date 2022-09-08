@@ -35,6 +35,12 @@ namespace Dythervin.PersistentData
 #endif
 
 #if UNITY_EDITOR
+        [MenuItem("Tools/Prefs/Open Folder")]
+        public static void OpenFolder()
+        {
+            EditorUtility.RevealInFinder(Application.persistentDataPath);
+        }
+
         internal static PrefContainer GetAtProject(string path)
         {
             var file = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
@@ -59,7 +65,9 @@ namespace Dythervin.PersistentData
         {
             switch (_version.Value)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 case 0: return File.ReadAllText(path);
+#endif
                 case 1: return Encoding.UTF8.GetString(Convert.FromBase64String(File.ReadAllText(path)));
                 default: throw new ArgumentOutOfRangeException();
             }
@@ -90,20 +98,8 @@ namespace Dythervin.PersistentData
 
         private static PrefContainer Deserialize(string path)
         {
-#if UNITY_EDITOR
-            try
-            {
-#endif
-                return JsonConvert.DeserializeObject<PrefContainer>(GetString(path), Settings)
-                       ?? new PrefContainer();
-#if UNITY_EDITOR
-            }
-            catch (FormatException e)
-            {
-                Debug.LogError(e);
-                return new PrefContainer();
-            }
-#endif
+            return JsonConvert.DeserializeObject<PrefContainer>(GetString(path), Settings)
+                   ?? new PrefContainer();
         }
     }
 }

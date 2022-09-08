@@ -12,10 +12,11 @@ namespace Dythervin.PersistentData
         public static event Action OnSave;
         public static readonly PrefContainer Default;
         private static readonly HashSet<PrefContainer> AllPrefs = new HashSet<PrefContainer>();
+        private const string FileExt = ".pref";
 
         static Prefs()
         {
-            Default = GetAt($"{Application.persistentDataPath}/prefs.json");
+            Default = GetAt($"{Application.persistentDataPath}/Default");
         }
 
         [RuntimeInitializeOnLoadMethod]
@@ -31,7 +32,7 @@ namespace Dythervin.PersistentData
 
         public static PrefContainer GetAt(string path, bool autoSaving = true)
         {
-            PrefContainer pref = PrefContainer.GetAt(path);
+            PrefContainer pref = PrefContainer.GetAt($"{path}{FileExt}");
             if (autoSaving)
                 AllPrefs.Add(pref);
             return pref;
@@ -45,15 +46,9 @@ namespace Dythervin.PersistentData
             Default.Save();
         }
 
-        [MenuItem("Tools/Prefs/Open Folder")]
-        public static void OpenFolder()
-        {
-            EditorUtility.RevealInFinder(Application.persistentDataPath);
-        }
-
         public static PrefContainer GetAtProject(string path, bool autoSaving = true)
         {
-            PrefContainer pref = PrefContainer.GetAtProject(path);
+            PrefContainer pref = PrefContainer.GetAtProject($"{path}{FileExt}");
             if (autoSaving)
                 AllPrefs.Add(pref);
             return pref;
