@@ -16,7 +16,22 @@ namespace Dythervin.PersistentData
 
         private static PlayerPrefInt _version = new PlayerPrefInt("CryptVer");
 #if UNITY_EDITOR
-        private static EditorPrefBool _enabled = new EditorPrefBool("PrefsCrypt");
+        private const string MenuItemName = "Tools/Prefs/Encyption";
+
+        private static EditorPrefBool _enabled = new EditorPrefBool("PrefsCrypt", true);
+
+        [MenuItem(MenuItemName)]
+        private static void Toggle()
+        {
+            _enabled.Value = !_enabled.Value;
+        }
+
+        [MenuItem(MenuItemName, true)]
+        private static bool ToggleValidate()
+        {
+            Menu.SetChecked(MenuItemName, _enabled);
+            return true;
+        }
 #endif
 
 #if UNITY_EDITOR
@@ -45,7 +60,7 @@ namespace Dythervin.PersistentData
             switch (_version.Value)
             {
                 case 0: return File.ReadAllText(path);
-                case 1: return Encoding.UTF8.GetString(File.ReadAllBytes(path));
+                case 1: return Encoding.UTF8.GetString(Convert.FromBase64String(File.ReadAllText(path)));
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -56,23 +71,39 @@ namespace Dythervin.PersistentData
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            string json = JsonConvert.SerializeObject(prefs, Formatting.Indented, Settings);
 #if UNITY_EDITOR
             if (!_enabled.Value)
             {
-                File.WriteAllText(prefs.Path, json);
+                File.WriteAllText(prefs.Path, JsonConvert.SerializeObject(prefs, Formatting.Indented, Settings));
+                _version.Value = 0;
             }
+            else
 #endif
-            File.WriteAllBytes(prefs.Path, Encoding.UTF8.GetBytes(json));
-            _version.Value = 1;
+            {
+                File.WriteAllText(prefs.Path, Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(prefs, Formatting.None, Settings))));
+                _version.Value = 1;
+            }
+
             //To ensure
             PlayerPrefs.Save();
         }
 
         private static PrefContainer Deserialize(string path)
         {
-            return JsonConvert.DeserializeObject<PrefContainer>(GetString(path), Settings)
-                   ?? new PrefContainer();
+#if UNITY_EDITOR
+            try
+            {
+#endif
+                return JsonConvert.DeserializeObject<PrefContainer>(GetString(path), Settings)
+                       ?? new PrefContainer();
+#if UNITY_EDITOR
+            }
+            catch (FormatException e)
+            {
+                Debug.LogError(e);
+                return new PrefContainer();
+            }
+#endif
         }
     }
 }
