@@ -14,9 +14,9 @@ namespace Dythervin.PersistentData
     {
         private static readonly JsonSerializerSettings Settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
-        private static PlayerPrefInt _version = new PlayerPrefInt("CryptVer");
+        private static PlayerPrefInt _version = new PlayerPrefInt("PersistentEncryptionVer");
 #if UNITY_EDITOR
-        private const string MenuItemName = "Tools/Prefs/Encyption";
+        private const string MenuItemName = "Tools/Prefs/Encryption";
 
         private static EditorPrefBool _enabled = new EditorPrefBool("PrefsCrypt", true);
 
